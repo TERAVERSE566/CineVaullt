@@ -1,9 +1,8 @@
 <?php
-// api/db_connect.php — Database connection for CineVault
 $host     = getenv('DB_HOST') ?: ($_SERVER['DB_HOST'] ?? 'localhost');
-$db_name  = getenv('DB_NAME') ?: ($_SERVER['DB_NAME'] ?? 'cinevault_db');
-$username = getenv('DB_USER') ?: ($_SERVER['DB_USER'] ?? 'root');
-$password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : ($_SERVER['DB_PASS'] ?? 'Anish566@@');
+$db_name  = getenv('DB_NAME') ?: ($_SERVER['DB_NAME'] ?? (getenv('DB_DATABASE') ?: ($_SERVER['DB_DATABASE'] ?? 'cinevault_db')));
+$username = getenv('DB_USER') ?: ($_SERVER['DB_USER'] ?? (getenv('DB_USERNAME') ?: ($_SERVER['DB_USERNAME'] ?? 'root')));
+$password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : ($_SERVER['DB_PASS'] ?? (getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : ($_SERVER['DB_PASSWORD'] ?? 'Anish566@@')));
 $port     = getenv('DB_PORT') ?: ($_SERVER['DB_PORT'] ?? '3306');
 
 try {
