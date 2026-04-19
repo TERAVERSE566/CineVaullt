@@ -1,7 +1,7 @@
 <?php
 // Support standard DATABASE_URL (e.g., mysql://user:pass@host:port/dbname)
 // Hardcoded fallback for TiDB Cloud to guarantee connection without Render Env Vars
-$hardcoded_dbUrl = 'mysql://uGHbY7uvVYrgr8U.root:zBKYgl8eQl0GD3Q7@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/cinevault_db';
+$hardcoded_dbUrl = 'mysql://uGHbY7uvVYrgr8U.root:G5tH5NvxwoeCZBGe@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/cinevault_db';
 
 if ($dbUrl = getenv('DATABASE_URL') ?: ($_SERVER['DATABASE_URL'] ?? $hardcoded_dbUrl)) {
     $parsed = parse_url($dbUrl);
