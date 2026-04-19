@@ -68,8 +68,8 @@ include 'includes/header.php';
             </div>
             <p id="movieDesc">Luffy and the Straw Hats set sail for the Grand Line.</p>
             <div class="hero-btns">
-                <button class="hero-btn-play" onclick="heroPlay()">? Play</button>
-                <button class="hero-btn-info" onclick="heroInfo()">? More Info</button>
+                <button class="hero-btn-play" onclick="heroPlay()"><svg style="width:18px;height:18px;margin-right:8px;vertical-align:-3px" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Play</button>
+                <button class="hero-btn-info" onclick="heroInfo()"><svg style="width:18px;height:18px;margin-right:8px;vertical-align:-3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> More Info</button>
             </div>
         </div>
     </div>
