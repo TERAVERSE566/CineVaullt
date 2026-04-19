@@ -153,7 +153,7 @@ include 'includes/header.php';
 body { overflow: hidden !important; }
 .login-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(10, 10, 20, 0.85); backdrop-filter: blur(12px);
+    background: #0a0a14;
     z-index: 99999; display: flex; align-items: center; justify-content: center;
 }
 .login-popup {
@@ -187,7 +187,12 @@ body { overflow: hidden !important; }
 <div class="watch-container">
     <!-- Player -->
     <div class="watch-player-wrapper">
-        <?php if (!empty($item['video_url'])): ?>
+        <?php if (!$userId): ?>
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a14;flex-direction:column;gap:16px;min-height:400px">
+            <div style="font-size:60px">🔒</div>
+            <p style="color:#666;font-size:18px">Login Required</p>
+        </div>
+        <?php elseif (!empty($item['video_url'])): ?>
         <video class="watch-video" id="mainVideoPlayer" controls <?= $pausedAt > 0 ? '' : 'autoplay' ?>>
             <source src="<?= htmlspecialchars($item['video_url']) ?>" type="video/mp4">
             Your browser does not support video.
