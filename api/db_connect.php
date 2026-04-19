@@ -14,9 +14,10 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ];
     
-    if (getenv('DB_SSL_CA')) {
-        $options[PDO::MYSQL_ATTR_SSL_CA] = getenv('DB_SSL_CA');
+    // TiDB Serverless requires SSL
+    if (strpos($host, 'tidbcloud.com') !== false) {
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        $options[PDO::MYSQL_ATTR_SSL_CA] = '';
     }
     
     $pdo = new PDO($dsn, $username, $password, $options);
