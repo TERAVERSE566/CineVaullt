@@ -3,8 +3,11 @@ FROM php:8.2-apache
 # Enable Apache mod_rewrite for URL routing
 RUN a2enmod rewrite
 
-# Install PHP extensions required for TiDB / MySQL
-RUN docker-php-ext-install pdo pdo_mysql mysqli
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql mysqli fileinfo
+
+# Increase PHP upload limits
+RUN echo "upload_max_filesize=500M\npost_max_size=500M\nmemory_limit=256M\nmax_execution_time=300" > /usr/local/etc/php/conf.d/uploads.ini
 
 # Copy the application code to the Apache document root
 COPY . /var/www/html/
