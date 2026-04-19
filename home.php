@@ -1,27 +1,33 @@
 <?php
 session_start();
+require_once 'api/db_connect.php';
+
+// Fetch top 10 trending/top rated for hero banner
+$heroStmt = $pdo->query("SELECT id, title, release_year, content_type, rating, genre, description, poster_url, backdrop_url FROM content ORDER BY RAND() LIMIT 10");
+$heroMovies = $heroStmt->fetchAll();
+$heroJsArr = [];
+foreach ($heroMovies as $m) {
+    $heroJsArr[] = [
+        'id'     => $m['id'],
+        'title'  => $m['title'],
+        'year'   => $m['release_year'],
+        'type'   => $m['content_type'] === 'series' ? 'Series' : 'Movie',
+        'rating' => $m['rating'],
+        'genre'  => $m['genre'],
+        'desc'   => $m['description'],
+        'poster' => $m['backdrop_url'] ?: $m['poster_url']
+    ];
+}
+
 $pageTitle = 'CineVault – Home';
 $activePage = 'home';
-$pageScript = <<<'JSEND'
-const heroMovies = [
-    { title: "ONE PIECE", year: "2023", type: "Series", rating: "8.5", genre: "Action & Adventure", desc: "Luffy and the Straw Hats set sail for the Grand Line.", poster: "https://image.tmdb.org/t/p/original/r0Q6eeN9L1BgqTBVDilUW7CEHQZ.jpg" },
-    { title: "JUJUTSU KAISEN", year: "2020", type: "Series", rating: "8.7", genre: "Animation, Action & Adventure", desc: "A boy swallows a cursed talisman and becomes cursed himself.", poster: "https://image.tmdb.org/t/p/original/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg" },
-    { title: "ATTACK ON TITAN", year: "2013", type: "Series", rating: "9.0", genre: "Animation, Sci-Fi & Fantasy", desc: "Humanity fights back against the majestic, flesh-eating Titans.", poster: "https://image.tmdb.org/t/p/original/801v2KvewJps7lbC3EajgVheIfz.jpg" },
-    { title: "THE LAST OF US", year: "2023", type: "Series", rating: "8.8", genre: "Drama, Sci-Fi & Survival", desc: "Joel and Ellie journey across a post-apocalyptic America.", poster: "https://image.tmdb.org/t/p/original/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg" },
-    { title: "BREAKING BAD", year: "2008", type: "Series", rating: "9.5", genre: "Crime & Drama", desc: "A chemistry teacher turns to drug manufacturing to secure his family's future.", poster: "https://image.tmdb.org/t/p/original/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" },
-    { title: "STRANGER THINGS", year: "2016", type: "Series", rating: "8.7", genre: "Sci-Fi, Horror & Drama", desc: "A small town uncovers a supernatural mystery involving secret experiments.", poster: "https://image.tmdb.org/t/p/original/49WJfeN0moxb9IPfGn8AIqMGskD.jpg" },
-    { title: "HOUSE OF THE DRAGON", year: "2022", type: "Series", rating: "8.4", genre: "Fantasy & Drama", desc: "The Targaryen civil war unfolds 200 years before Game of Thrones.", poster: "https://image.tmdb.org/t/p/original/z2yahl2uefxDCl0nogcRBstwruJ.jpg" },
-    { title: "INTERSTELLAR", year: "2014", type: "Movie", rating: "8.6", genre: "Sci-Fi & Drama", desc: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.", poster: "https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg" },
-    { title: "THE DARK KNIGHT", year: "2008", type: "Movie", rating: "9.0", genre: "Action & Crime", desc: "Batman faces his greatest psychological and physical test against the Joker.", poster: "https://image.tmdb.org/t/p/original/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg" },
-    { title: "INCEPTION", year: "2010", type: "Movie", rating: "8.8", genre: "Sci-Fi & Thriller", desc: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task.", poster: "https://image.tmdb.org/t/p/original/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg" },
-    { title: "DEADPOOL & WOLVERINE", year: "2024", type: "Movie", rating: "8.1", genre: "Action & Comedy", desc: "Deadpool reunites with Wolverine for a multiverse-spanning adventure.", poster: "https://image.tmdb.org/t/p/original/9l1eZiJHmhr5jIlthMdJN5WYoff.jpg" },
-    { title: "AVENGERS: ENDGAME", year: "2019", type: "Movie", rating: "8.4", genre: "Action & Sci-Fi", desc: "The remaining Avengers assemble once more to reverse Thanos's actions.", poster: "https://image.tmdb.org/t/p/original/orjiB3oUIsyz60hoEqkiGpy5CeO.jpg" }
-];
+$pageScript = 'const heroMovies = ' . json_encode($heroJsArr) . ';
 let heroIdx = 0;
 function changeBanner() {
+    if (heroMovies.length === 0) return;
     var m = heroMovies[heroIdx];
     var bg = document.getElementById("heroBanner");
-    if(bg) bg.style.backgroundImage = "url('" + m.poster + "')";
+    if(bg) bg.style.backgroundImage = "url(\'" + m.poster + "\')";
     var titleEl = document.getElementById("movieTitle");
     if(titleEl) titleEl.innerText = m.title;
     var typeEl = document.getElementById("movieType");
@@ -38,8 +44,8 @@ function changeBanner() {
 }
 
 function heroPlay() {
-    var m = heroMovies[heroIdx > 0 ? heroIdx - 1 : 0];
-    if (m) openModal(m.title, m.year, m.type, m.rating, m.genre, m.desc, m.poster);
+    var m = heroMovies[heroIdx > 0 ? heroIdx - 1 : (heroMovies.length > 0 ? heroMovies.length - 1 : 0)];
+    if (m && m.id) window.location.href = "watch.php?id=" + m.id;
 }
 
 function heroInfo() { heroPlay(); }
@@ -48,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function() {
     changeBanner();
     setInterval(changeBanner, 5000);
 });
-JSEND;
+';
 include 'includes/header.php';
 ?>
 
