@@ -121,7 +121,28 @@ include 'includes/header.php';
 .ep-season-hdr { background:rgba(255,255,255,.05);padding:12px 16px;font-weight:700;display:flex;align-items:center;justify-content:space-between; }
 .ep-row { display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid rgba(255,255,255,.04);font-size:13px; }
 .ep-row:hover { background:rgba(255,255,255,.03); }
+/* Charts */
+.charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:32px; }
+.chart-box { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:24px; }
+.chart-box h3 { font-size:15px; margin-bottom:16px; color:#ddd; }
+.chart-full { grid-column:span 2; }
+@media(max-width:700px){.charts-grid{grid-template-columns:1fr}.chart-full{grid-column:span 1}}
+/* Users Pro */
+.users-pro-table { width:100%;border-collapse:collapse;font-size:13px; }
+.users-pro-table th,.users-pro-table td { padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.05); }
+.users-pro-table th { color:#aaa;font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.03); }
+.users-pro-table tr:hover td { background:rgba(255,255,255,.02); }
+.plan-select { padding:5px 8px;background:#111;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#fff;font-size:12px;cursor:pointer; }
+.ban-btn { padding:5px 12px;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;transition:.2s; }
+.ban-btn.active { background:rgba(230,57,70,.15);color:var(--red);border:1px solid rgba(230,57,70,.3); }
+.ban-btn.active:hover { background:rgba(230,57,70,.3); }
+.ban-btn.banned { background:rgba(0,200,100,.1);color:#0c6;border:1px solid rgba(0,200,100,.3); }
+.ban-btn.banned:hover { background:rgba(0,200,100,.25); }
+.pagination { display:flex;gap:8px;margin-top:20px;align-items:center; }
+.page-btn { padding:7px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;cursor:pointer;font-size:13px;transition:.2s; }
+.page-btn:hover,.page-btn.active { background:var(--red);border-color:var(--red); }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <div class="admin-wrap">
     <h1 class="admin-title">⚡ Admin Console</h1>
@@ -189,6 +210,22 @@ include 'includes/header.php';
                     </tbody>
                 </table>
                 <?php else: echo '<p style="color:#555">No community ratings yet.</p>'; endif; ?>
+            </div>
+        </div>
+
+        <!-- Chart.js Analytics -->
+        <div class="charts-grid" id="chartsGrid" style="opacity:0;transition:opacity .5s">
+            <div class="chart-box chart-full">
+                <h3>📈 New User Registrations – Last 30 Days</h3>
+                <canvas id="signupChart" height="90"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>🎬 Content Library Breakdown</h3>
+                <canvas id="contentChart" height="200"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>🏆 Top 5 Most Watched</h3>
+                <canvas id="topChart" height="200"></canvas>
             </div>
         </div>
     </div>
@@ -272,6 +309,7 @@ include 'includes/header.php';
                             <option value="horror">👻 Horror</option>
                             <option value="comedy">😂 Comedy</option>
                             <option value="romance">❤️ Romance</option>
+                            <option value="anime">🎌 Anime</option>
                         </select>
                     </div>
                     <div class="admin-field">
@@ -352,22 +390,31 @@ include 'includes/header.php';
     <!-- ═══ USERS TAB ═══ -->
     <div class="tab-pane" id="tab-users">
         <div class="admin-form-card">
-            <h2>👥 Recent Users</h2>
-            <table class="users-table">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+                <h2 style="margin:0">👥 User Management</h2>
+                <span id="usersCountBadge" style="background:rgba(255,255,255,.07);padding:4px 14px;border-radius:20px;font-size:13px;color:#aaa">Loading…</span>
+            </div>
+            <div id="usersMsgWrap"></div>
+            <div style="overflow-x:auto">
+            <table class="users-pro-table" id="usersProTable">
                 <thead>
-                    <tr><th>Username</th><th>Email</th><th>Plan</th><th>Joined</th></tr>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Plan</th>
+                        <th>Watches</th>
+                        <th>Watchlist</th>
+                        <th>Joined</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
                 </thead>
-                <tbody>
-                <?php foreach ($recentUsers as $u): ?>
-                <tr>
-                    <td style="font-weight:700"><?= htmlspecialchars($u['username']) ?></td>
-                    <td style="color:#aaa"><?= htmlspecialchars($u['email']) ?></td>
-                    <td><span class="plan-badge plan-<?= htmlspecialchars($u['plan']??'basic') ?>"><?= strtoupper($u['plan']??'BASIC') ?></span></td>
-                    <td style="color:#666"><?= date('M j, Y', strtotime($u['created_at'])) ?></td>
-                </tr>
-                <?php endforeach; ?>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="8" style="text-align:center;color:#555;padding:30px">Loading users…</td></tr>
                 </tbody>
             </table>
+            </div>
+            <div class="pagination" id="usersPagination"></div>
         </div>
     </div>
 </div>
@@ -389,6 +436,7 @@ include 'includes/header.php';
                     <select id="editType" name="content_type">
                         <option value="movie">🎬 Movie</option>
                         <option value="series">📺 Series</option>
+                        <option value="anime">🎌 Anime</option>
                     </select>
                 </div>
                 <div class="admin-field">
@@ -447,6 +495,8 @@ function switchTab(tab) {
     document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
     event.currentTarget.classList.add('active');
+    if (tab === 'users' && !window._usersLoaded) { window._usersLoaded = true; loadUsers(1); }
+    if (tab === 'overview' && !window._chartsLoaded) { window._chartsLoaded=true; initCharts(); }
 }
 function toggleSeriesFields() {
     var isSeries = document.getElementById('f_type').value === 'series';
@@ -489,19 +539,75 @@ async function fetchCinemaDetails() {
 }
 async function uploadFile(input, type, targetFieldId, statusId) {
     if (!input.files[0]) return;
+    var file   = input.files[0];
     var status = document.getElementById(statusId);
-    status.textContent='⏳ Uploading...';
-    var fd = new FormData();
-    fd.append('file', input.files[0]);
-    try {
-        var r = await fetch('api/upload_media.php?type='+type, {method:'POST',body:fd});
-        var d = await r.json();
-        if (d.status === 'success') {
-            document.getElementById(targetFieldId).value = d.url;
-            status.style.color='#0c6'; status.textContent='✅ Uploaded: '+d.filename;
-            if (type==='poster') { document.getElementById('posterPreview').src=d.url; document.getElementById('posterPreviewWrap').style.display=''; }
-        } else { status.style.color='#f55'; status.textContent='❌ '+d.message; }
-    } catch(e) { status.style.color='#f55'; status.textContent='❌ Upload failed'; }
+    var CHUNK  = 2 * 1024 * 1024; // 2 MB per chunk
+
+    // Build a progress bar inside statusId element
+    status.innerHTML = '<div style="background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;height:8px;width:100%;margin-top:4px"><div id="uploadBar_'+statusId+'" style="height:100%;background:var(--red);width:0%;transition:width .2s"></div></div><span id="uploadPct_'+statusId+'" style="font-size:12px;color:#aaa">0%</span>';
+    var bar = document.getElementById('uploadBar_'+statusId);
+    var pct = document.getElementById('uploadPct_'+statusId);
+
+    // Simple upload for small files / images
+    if (file.size <= 10 * 1024 * 1024 || type !== 'video') {
+        var fd = new FormData(); fd.append('file', file);
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'api/upload_media.php?type='+type, true);
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) { var p=Math.round(e.loaded/e.total*100); bar.style.width=p+'%'; pct.textContent=p+'%'; }
+            };
+            xhr.onload = function() {
+                var d = JSON.parse(xhr.responseText);
+                if (d.status === 'success') {
+                    document.getElementById(targetFieldId).value = d.url;
+                    status.innerHTML = '<span style="color:#0c6">\u2705 Uploaded: '+d.filename+'</span>';
+                    if (type==='poster') { document.getElementById('posterPreview').src=d.url; document.getElementById('posterPreviewWrap').style.display=''; }
+                } else { status.innerHTML = '<span style="color:#f55">\u274c '+d.message+'</span>'; }
+            };
+            xhr.onerror = function() { status.innerHTML = '<span style="color:#f55">\u274c Network error</span>'; };
+            xhr.send(fd);
+        } catch(e) { status.innerHTML = '<span style="color:#f55">\u274c Upload failed</span>'; }
+        return;
+    }
+
+    // Chunked upload for large videos
+    var totalChunks = Math.ceil(file.size / CHUNK);
+    var uploadId    = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    var origName    = file.name.replace(/[^a-zA-Z0-9_.-]/g,'_');
+    pct.textContent = '0% ('+totalChunks+' chunks)';
+
+    for (var i = 0; i < totalChunks; i++) {
+        var start  = i * CHUNK;
+        var end    = Math.min(start + CHUNK, file.size);
+        var slice  = file.slice(start, end);
+        var fd     = new FormData();
+        fd.append('file', slice, origName);
+        fd.append('chunk_index', i);
+        fd.append('total_chunks', totalChunks);
+        fd.append('upload_id', uploadId);
+        fd.append('original_name', origName);
+
+        try {
+            var r = await fetch('api/upload_media.php?type='+type, {method:'POST',body:fd});
+            var d = await r.json();
+            var progress = Math.round(((i+1)/totalChunks)*100);
+            bar.style.width = progress + '%';
+            pct.textContent = progress + '% (' + (i+1) + '/' + totalChunks + ' chunks)';
+            if (d.status === 'success') {
+                // Final chunk assembled
+                document.getElementById(targetFieldId).value = d.url;
+                status.innerHTML = '<span style="color:#0c6">\u2705 Uploaded: '+d.filename+' ('+Math.round(file.size/1048576)+' MB)</span>';
+                return;
+            } else if (d.status !== 'chunk_ok') {
+                status.innerHTML = '<span style="color:#f55">\u274c '+d.message+'</span>';
+                return;
+            }
+        } catch(e) {
+            status.innerHTML = '<span style="color:#f55">\u274c Chunk '+(i+1)+' failed. Retry or use a smaller file.</span>';
+            return;
+        }
+    }
 }
 function previewTrailer() {
     var id = document.getElementById('f_trailer').value.trim();
@@ -612,6 +718,116 @@ async function deleteContent(id,title){
     }catch(e){alert('Connection error');}
 }
 document.getElementById('editModalOverlay').addEventListener('click',function(e){if(e.target===this)closeEditModal();});
+
+// ── Chart.js Analytics ────────────────────────────────────────────────────────
+async function initCharts() {
+    var grid = document.getElementById('chartsGrid');
+    try {
+        var r = await fetch('api/admin_analytics.php');
+        var d = await r.json();
+        if (d.error) return;
+        grid.style.opacity = '1';
+        var chartDefaults = { responsive: true, maintainAspectRatio: true };
+        // 1. Signup line chart
+        new Chart(document.getElementById('signupChart'), {
+            type: 'line',
+            data: {
+                labels: d.signup_labels,
+                datasets: [{ label: 'New Users', data: d.signup_data,
+                    borderColor: '#e63946', backgroundColor: 'rgba(230,57,70,0.12)',
+                    tension: 0.4, fill: true, pointRadius: 3 }]
+            },
+            options: { ...chartDefaults, plugins:{legend:{labels:{color:'#aaa'}}}, scales:{
+                x:{ticks:{color:'#666',maxTicksLimit:10},grid:{color:'rgba(255,255,255,.05)'}},
+                y:{ticks:{color:'#666',stepSize:1},grid:{color:'rgba(255,255,255,.05)'},beginAtZero:true}
+            }}
+        });
+        // 2. Content doughnut
+        new Chart(document.getElementById('contentChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Movies', 'Series', 'Anime'],
+                datasets: [{ data: d.content_counts,
+                    backgroundColor: ['rgba(230,57,70,.8)','rgba(255,193,7,.8)','rgba(130,80,255,.8)'],
+                    borderColor: '#111', borderWidth: 3 }]
+            },
+            options: { ...chartDefaults, plugins:{legend:{labels:{color:'#ccc',padding:16}}} }
+        });
+        // 3. Top 5 bar
+        if (d.top_labels.length > 0) {
+            new Chart(document.getElementById('topChart'), {
+                type: 'bar',
+                data: {
+                    labels: d.top_labels.map(function(t){return t.length>18?t.slice(0,16)+'…':t;}),
+                    datasets: [{ label: 'Watches', data: d.top_data,
+                        backgroundColor: 'rgba(255,193,7,0.6)', borderColor: 'rgba(255,193,7,0.9)',
+                        borderWidth: 1, borderRadius: 6 }]
+                },
+                options: { ...chartDefaults, plugins:{legend:{labels:{color:'#aaa'}}}, scales:{
+                    x:{ticks:{color:'#888'},grid:{color:'rgba(255,255,255,.04)'}},
+                    y:{ticks:{color:'#888',stepSize:1},grid:{color:'rgba(255,255,255,.04)'},beginAtZero:true}
+                }}
+            });
+        } else {
+            document.getElementById('topChart').parentElement.innerHTML += '<p style="color:#555;margin-top:8px">No watch history yet — charts will appear once users start watching.</p>';
+        }
+    } catch(e) { console.warn('Charts load error', e); }
+}
+window.addEventListener('DOMContentLoaded', function(){ window._chartsLoaded=true; initCharts(); });
+
+// ── User Management Pro ───────────────────────────────────────────────────────
+var _usersPage = 1;
+async function loadUsers(page) {
+    _usersPage = page;
+    var fd = new FormData(); fd.append('action','get_users'); fd.append('page', page);
+    var r = await fetch('api/admin_manage_user.php', {method:'POST',body:fd});
+    var d = await r.json();
+    if (d.status !== 'success') return;
+    document.getElementById('usersCountBadge').textContent = d.total + ' users total';
+    var plans = ['basic','pro','max'];
+    var html = d.users.map(function(u){ return '<tr id="urow-'+u.id+'">' +
+        '<td><strong>'+escHtml(u.username)+'</strong></td>' +
+        '<td style="color:#aaa">'+escHtml(u.email)+'</td>' +
+        '<td><select class="plan-select" onchange="changeUserPlan('+u.id+',this.value)">'+
+            plans.map(function(p){return '<option value="'+p+'"'+(u.plan===p?' selected':'')+'>'+p.toUpperCase()+'</option>';}).join('')+
+        '</select></td>' +
+        '<td style="color:#0cf">'+u.watch_count+'</td>' +
+        '<td style="color:#a0f">'+u.watchlist_count+'</td>' +
+        '<td style="color:#555">'+formatDate(u.created_at)+'</td>' +
+        '<td><span style="font-size:11px;padding:3px 8px;border-radius:10px;'+(u.is_banned?'background:rgba(230,57,70,.15);color:var(--red)':'background:rgba(0,200,100,.1);color:#0c6')+'">'+
+            (u.is_banned?'🚫 Banned':'✅ Active')+'</span></td>' +
+        '<td><button class="ban-btn '+(u.is_banned?'banned':'active')+'" onclick="toggleBan('+u.id+')">'+
+            (u.is_banned?'✅ Activate':'🚫 Ban')+'</button></td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('usersTableBody').innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px">No users found.</td></tr>';
+    var pages = Math.ceil(d.total / d.limit);
+    var pHtml = '';
+    if (pages > 1) {
+        for (var i=1;i<=pages;i++) pHtml += '<button class="page-btn'+(i===page?' active':'')+'" onclick="loadUsers('+i+')">'+i+'</button>';
+    }
+    document.getElementById('usersPagination').innerHTML = pHtml;
+}
+async function changeUserPlan(uid, plan) {
+    var fd=new FormData(); fd.append('action','change_plan'); fd.append('user_id',uid); fd.append('plan',plan);
+    var r=await fetch('api/admin_manage_user.php',{method:'POST',body:fd});
+    var d=await r.json();
+    showUsersMsg(d.status==='success', d.message);
+}
+async function toggleBan(uid) {
+    var fd=new FormData(); fd.append('action','toggle_ban'); fd.append('user_id',uid);
+    var r=await fetch('api/admin_manage_user.php',{method:'POST',body:fd});
+    var d=await r.json();
+    if(d.status==='success'){showUsersMsg(true,d.message); loadUsers(_usersPage);}
+    else showUsersMsg(false,d.message);
+}
+function showUsersMsg(ok, msg) {
+    var el=document.getElementById('usersMsgWrap');
+    el.innerHTML='<div class="admin-msg '+(ok?'ok':'err')+'" style="margin-bottom:14px">'+(ok?'✅':'❌')+' '+msg+'</div>';
+    setTimeout(function(){el.innerHTML='';},3000);
+}
+function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function formatDate(s){var d=new Date(s);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 </script>
 
 <?php include 'includes/footer.php'; ?>

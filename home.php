@@ -68,8 +68,9 @@ include 'includes/header.php';
                 <span class="meta-sep">�</span>
                 <span id="movieYear">2023</span>
                 <span class="meta-sep">�</span>
+                <span class="meta-sep">●</span>
                 <span id="movieType">Series</span>
-                <span class="meta-sep">�</span>
+                <span class="meta-sep">●</span>
                 <span id="movieGenre">Action &amp; Adventure</span>
             </div>
             <p id="movieDesc">Luffy and the Straw Hats set sail for the Grand Line.</p>
@@ -109,13 +110,74 @@ if ($userId) {
     }
 }
 
+// ── Smart Recommendations ─────────────────────────────────────────────────────
+if ($userId) {
+    // Find top genre from user's watch history
+    $topGenreStmt = $pdo->prepare("
+        SELECT c.genre FROM watch_history wh
+        JOIN content c ON wh.content_id = c.id
+        WHERE wh.user_id = ? AND c.genre IS NOT NULL AND c.genre != ''
+        GROUP BY c.genre ORDER BY COUNT(*) DESC LIMIT 1
+    ");
+    $topGenreStmt->execute([$userId]);
+    $topGenre = $topGenreStmt->fetchColumn();
+
+    if ($topGenre) {
+        // Get first keyword from genre string (e.g. "Action · Sci-Fi" → "Action")
+        $genreKeyword = preg_split('/[\s·,|]+/', trim($topGenre))[0];
+        $recStmt = $pdo->prepare("
+            SELECT * FROM content
+            WHERE genre LIKE ?
+            AND id NOT IN (SELECT content_id FROM watch_history WHERE user_id = ?)
+            ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 8
+        ");
+        $recStmt->execute(["%$genreKeyword%", $userId]);
+        $recItems = $recStmt->fetchAll();
+
+        if (count($recItems) > 0) {
+            echo '<section class="content-section">';
+            echo '<div class="section-header"><h2 class="section-title">🎯 Recommended For You</h2><span style="color:#888;font-size:13px;margin-left:12px">Based on your taste in ' . htmlspecialchars($genreKeyword) . '</span></div>';
+            echo '<div class="row-scroll">';
+            foreach ($recItems as $row) {
+                echo '<div class="movie-card" onclick="window.location.href=\'watch.php?id='.(int)$row['id'].'\'">';
+                echo '<div class="card-img-wrap">';
+                echo '<img src="'.htmlspecialchars($row['poster_url']).'" loading="lazy" alt="'.htmlspecialchars($row['title']).'" onerror="this.src=\'https://placehold.co/300x450/111/fff?text='.urlencode($row['title']).'\'">'; 
+                echo '<div class="card-overlay"><div class="card-play-btn"></div></div>';
+                echo '<div style="position:absolute;top:8px;left:8px;background:rgba(230,57,70,.85);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;color:#fff;letter-spacing:.5px">FOR YOU</div>';
+                echo '<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);padding:2px 7px;border-radius:6px;font-size:11px;color:#f5c518">⭐ '.htmlspecialchars($row['rating']).'</div>';
+                echo '</div><div class="card-info"><span class="card-title">'.htmlspecialchars($row['title']).'</span></div></div>';
+            }
+            echo '</div></section>';
+        }
+    }
+} else {
+    // Fallback for guests: top-rated overall (label differently)
+    $recStmt = $pdo->query("SELECT * FROM content ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 8");
+    $recItems = $recStmt->fetchAll();
+    if (count($recItems) > 0) {
+        echo '<section class="content-section">';
+        echo '<div class="section-header"><h2 class="section-title">⭐ Top Picks For You</h2><span style="color:#888;font-size:13px;margin-left:12px"><a href="login.php" style="color:var(--red);text-decoration:none">Sign in</a> to get personalised recommendations</span></div>';
+        echo '<div class="row-scroll">';
+        foreach ($recItems as $row) {
+            echo '<div class="movie-card" onclick="window.location.href=\'watch.php?id='.(int)$row['id'].'\'">';
+            echo '<div class="card-img-wrap">';
+            echo '<img src="'.htmlspecialchars($row['poster_url']).'" loading="lazy" alt="'.htmlspecialchars($row['title']).'" onerror="this.src=\'https://placehold.co/300x450/111/fff?text='.urlencode($row['title']).'\'">'; 
+            echo '<div class="card-overlay"><div class="card-play-btn"></div></div>';
+            echo '<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);padding:2px 7px;border-radius:6px;font-size:11px;color:#f5c518">⭐ '.htmlspecialchars($row['rating']).'</div>';
+            echo '</div><div class="card-info"><span class="card-title">'.htmlspecialchars($row['title']).'</span></div></div>';
+        }
+        echo '</div></section>';
+    }
+}
+
 // Other dynamic sections
 $sections = [
-    'Trending Now'        => 'SELECT * FROM content WHERE CAST(rating AS DECIMAL(4,1)) > 8.0 ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 8',
-    'Action Blockbusters' => 'SELECT * FROM content WHERE genre LIKE "%Action%" ORDER BY CAST(release_year AS UNSIGNED) DESC LIMIT 8',
-    'Sci-Fi & Fantasy'    => 'SELECT * FROM content WHERE genre LIKE "%Sci-Fi%" OR genre LIKE "%Fantasy%" LIMIT 8',
-    'Binge-Worthy Series' => 'SELECT * FROM content WHERE content_type = "series" ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 8',
-    'New Releases'        => 'SELECT * FROM content ORDER BY CAST(release_year AS UNSIGNED) DESC LIMIT 8',
+    'Trending Now'        => 'SELECT * FROM content WHERE CAST(rating AS DECIMAL(4,1)) > 8.0 ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 12',
+    'Action Blockbusters' => 'SELECT * FROM content WHERE genre LIKE "%Action%" ORDER BY CAST(release_year AS UNSIGNED) DESC LIMIT 12',
+    '🎌 Top Anime'        => 'SELECT * FROM content WHERE content_type = "anime" OR category = "anime" ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 12',
+    'Sci-Fi & Fantasy'    => 'SELECT * FROM content WHERE genre LIKE "%Sci-Fi%" OR genre LIKE "%Fantasy%" LIMIT 12',
+    'Binge-Worthy Series' => 'SELECT * FROM content WHERE content_type = "series" ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 12',
+    'New Releases'        => 'SELECT * FROM content ORDER BY CAST(release_year AS UNSIGNED) DESC LIMIT 12',
 ];
 
 foreach ($sections as $title => $query) {

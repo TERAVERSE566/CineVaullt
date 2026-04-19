@@ -83,6 +83,12 @@ include 'includes/header.php';
 .mood-btn { padding:12px 22px; border:1px solid rgba(255,255,255,0.1); border-radius:30px; background:rgba(255,255,255,0.05);
     color:#ddd; cursor:pointer; font-size:15px; transition:all .2s; font-family:'Nunito',sans-serif; }
 .mood-btn:hover { border-color:var(--red); color:#fff; background:rgba(230,57,70,0.1); transform:translateY(-2px); }
+/* Genre pills */
+.genre-pills { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+.genre-pill { padding:7px 18px; border:1px solid rgba(255,255,255,0.1); border-radius:20px;
+    background:rgba(255,255,255,0.04); color:#ccc; cursor:pointer; font-size:13px;
+    transition:all .2s; font-family:'Nunito',sans-serif; text-decoration:none; }
+.genre-pill:hover, .genre-pill.active { border-color:var(--red); background:rgba(230,57,70,0.15); color:#fff; }
 </style>
 
 <div class="search-page">
@@ -133,6 +139,7 @@ include 'includes/header.php';
                 <option value="all"    <?= $filterType==='all'    ? 'selected':'' ?>>All</option>
                 <option value="movie"  <?= $filterType==='movie'  ? 'selected':'' ?>>Movies</option>
                 <option value="series" <?= $filterType==='series' ? 'selected':'' ?>>TV Shows</option>
+                <option value="anime"  <?= $filterType==='anime'  ? 'selected':'' ?>>🎌 Anime</option>
             </select>
         </div>
         <div class="filter-group">
@@ -166,6 +173,32 @@ include 'includes/header.php';
         <a href="search.php" style="color:#666;font-size:13px;align-self:center;text-decoration:none">✕ Reset</a>
         <?php endif; ?>
     </form>
+
+    <!-- Genre Quick-Filter Pills -->
+    <?php
+    $genrePills = [
+        ['💥 Action',   'q=action'],
+        ['😂 Comedy',   'q=comedy'],
+        ['👻 Horror',   'q=horror'],
+        ['❤️ Romance',  'q=romance'],
+        ['🚀 Sci-Fi',   'q=sci-fi'],
+        ['🧩 Thriller', 'q=thriller'],
+        ['🎌 Anime',    'type=anime'],
+        ['📺 Series',   'type=series'],
+        ['🇮🇳 Bollywood','q=bollywood&type=movie'],
+        ['🌟 Hollywood','q=hollywood&type=movie'],
+    ];
+    ?>
+    <div class="genre-pills">
+        <?php foreach ($genrePills as [$label, $params]):
+            $isActive = false;
+            parse_str($params, $pArr);
+            if (isset($pArr['q']) && strtolower($q) === strtolower($pArr['q'])) $isActive = true;
+            if (isset($pArr['type']) && $filterType === $pArr['type'] && !isset($pArr['q'])) $isActive = true;
+        ?>
+        <a href="search.php?<?= $params ?>" class="genre-pill<?= $isActive ? ' active' : '' ?>"><?= $label ?></a>
+        <?php endforeach; ?>
+    </div>
 
     <!-- Results -->
     <div class="results-header">

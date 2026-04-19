@@ -30,13 +30,20 @@ if ($minRating > 0) { $query .= " AND CAST(rating AS DECIMAL(4,1)) >= ?"; $param
 if ($yearFrom > 0)  { $query .= " AND CAST(release_year AS UNSIGNED) >= ?"; $params[] = $yearFrom; }
 if ($yearTo > 0)    { $query .= " AND CAST(release_year AS UNSIGNED) <= ?"; $params[] = $yearTo; }
 
+// Title search
+$q = trim($_GET['q'] ?? '');
+if ($q !== '') {
+    $query .= " AND title LIKE ?";
+    $params[] = '%' . $q . '%';
+}
+
 switch ($sortBy) {
     case 'rating': $query .= " ORDER BY CAST(rating AS DECIMAL(4,1)) DESC"; break;
     case 'oldest': $query .= " ORDER BY CAST(release_year AS UNSIGNED) ASC"; break;
     case 'az':     $query .= " ORDER BY title ASC"; break;
     default:       $query .= " ORDER BY CAST(release_year AS UNSIGNED) DESC"; break;
 }
-$query .= " LIMIT 80";
+$query .= " LIMIT 200";
 
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
@@ -154,8 +161,12 @@ include 'includes/header.php';
         <label>Year To</label>
         <input type="number" name="year_to" min="1900" max="2030" value="<?= $yearTo ?: '' ?>" placeholder="2025">
     </div>
+    <div style="flex-grow:1;max-width:250px">
+        <label>Title</label>
+        <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search series..." style="width:100%">
+    </div>
     <button type="submit" class="adv-filter-apply">Apply</button>
-    <?php if ($minRating || $yearFrom || $yearTo): ?>
+    <?php if ($minRating || $yearFrom || $yearTo || $q): ?>
     <a href="series.php?cat=<?= $catFilter ?>" style="color:#666;font-size:12px;align-self:center;text-decoration:none">✕ Reset</a>
     <?php endif; ?>
 </form>
