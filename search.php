@@ -17,7 +17,7 @@ $params = [];
 $where  = [];
 
 if ($q !== '') {
-    $where[]  = "(title LIKE ? OR genre LIKE ? OR description LIKE ?)";
+    $where[]  = "(LOWER(title) LIKE LOWER(?) OR LOWER(genre) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))";
     $like = "%$q%";
     $params[] = $like; $params[] = $like; $params[] = $like;
 }

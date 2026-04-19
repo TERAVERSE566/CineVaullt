@@ -11,7 +11,7 @@ if (strlen($q) < 2) {
 
 $like = '%' . $q . '%';
 try {
-    $stmt = $pdo->prepare("SELECT id, title, release_year, content_type, rating, poster_url FROM content WHERE title LIKE ? OR genre LIKE ? ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 8");
+    $stmt = $pdo->prepare("SELECT id, title, release_year, content_type, rating, poster_url FROM content WHERE LOWER(title) LIKE LOWER(?) OR LOWER(genre) LIKE LOWER(?) ORDER BY CAST(rating AS DECIMAL(4,1)) DESC LIMIT 8");
     $stmt->execute([$like, $like]);
     $results = $stmt->fetchAll();
     echo json_encode(['results' => $results]);

@@ -36,7 +36,7 @@ if ($yearTo > 0)    { $query .= " AND CAST(release_year AS UNSIGNED) <= ?"; $par
 // Title search
 $q = trim($_GET['q'] ?? '');
 if ($q !== '') {
-    $query .= " AND title LIKE ?";
+    $query .= " AND LOWER(title) LIKE LOWER(?)";
     $params[] = '%' . $q . '%';
 }
 
