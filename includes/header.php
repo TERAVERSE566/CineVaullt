@@ -42,6 +42,7 @@ if (!$_cv_avatar && isset($_SESSION['user_id'])) {
         <a href="home.php"   <?php echo ($activePage ?? '') === 'home'   ? 'class="active"' : ''; ?>>Home</a>
         <a href="mv.php"     <?php echo ($activePage ?? '') === 'movies' ? 'class="active"' : ''; ?>>Movies</a>
         <a href="series.php" <?php echo ($activePage ?? '') === 'series' ? 'class="active"' : ''; ?>>TV Shows</a>
+        <a href="anime.php"  <?php echo ($activePage ?? '') === 'anime'  ? 'class="active"' : ''; ?>>Anime</a>
         <a href="search.php" <?php echo ($activePage ?? '') === 'search' ? 'class="active"' : ''; ?>>Browse</a>
     </div>
     <div class="nav-right">

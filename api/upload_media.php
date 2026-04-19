@@ -47,7 +47,7 @@ if ($type === 'video') {
 // Local path for development
 if (!is_dir($dir)) {
     $dir = __DIR__ . '/../uploads/' . ($type === 'video' ? 'videos' : 'posters') . '/';
-    $urlBase = '/uploads/' . ($type === 'video' ? 'videos' : 'posters') . '/';
+    $urlBase = 'uploads/' . ($type === 'video' ? 'videos' : 'posters') . '/';
 }
 
 if (!in_array($ext, $allowed)) {

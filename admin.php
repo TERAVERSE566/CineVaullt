@@ -421,7 +421,12 @@ include 'includes/header.php';
                 </div>
                 <div class="admin-field">
                     <label>Video URL</label>
-                    <input type="text" id="editVideo" name="video_url" placeholder="https://watchluna.com/…">
+                    <div class="upload-row">
+                        <input type="text" id="editVideo" name="video_url" placeholder="https://watchluna.com/…">
+                        <label class="upload-btn" for="uploadEditVideoFile">📁 Upload Video</label>
+                        <input type="file" id="uploadEditVideoFile" accept="video/*" style="display:none" onchange="uploadFile(this,'video','editVideo','editVideoUploadStatus')">
+                    </div>
+                    <div id="editVideoUploadStatus" style="font-size:12px;color:#0c6;margin-top:4px"></div>
                 </div>
                 <div class="admin-field">
                     <label>Trailer YouTube ID</label>
@@ -534,7 +539,7 @@ async function loadEpisodes() {
         html += '</select>';
         html += '<input id="newEpNum" type="number" placeholder="Episode #" style="padding:8px;background:#0e0e16;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff">';
         html += '<input id="newEpTitle" type="text" placeholder="Episode Title" style="padding:8px;background:#0e0e16;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;grid-column:span 2">';
-        html += '<input id="newEpVideo" type="text" placeholder="Video URL" style="padding:8px;background:#0e0e16;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;grid-column:span 2">';
+        html += '<div style="grid-column:span 2; display:flex; gap:8px"><input id="newEpVideo" type="text" placeholder="Video URL" style="flex:1;padding:8px;background:#0e0e16;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff"><label class="upload-btn" for="uploadEpVideoFile" style="padding:8px 14px; margin:0; line-height:20px; align-self:center">📁 Upload</label><input type="file" id="uploadEpVideoFile" accept="video/*" style="display:none" onchange="uploadFile(this,\'video\',\'newEpVideo\',\'epVideoUploadStatus\')"></div><div id="epVideoUploadStatus" style="grid-column:span 2; font-size:12px; color:#0c6; margin-top:-5px;"></div>';
         html += '<input id="newEpDur" type="text" placeholder="Duration e.g. 45m" style="padding:8px;background:#0e0e16;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff">';
         html += '<button onclick="addEpisode()" style="padding:8px 18px;background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">+ Add Episode</button></div>';
     }
