@@ -148,6 +148,42 @@ include 'includes/header.php';
 .comment-form-container textarea:focus { outline:none;border-color:var(--red); }
 </style>
 
+<?php if (!$userId): ?>
+<style>
+body { overflow: hidden !important; }
+.login-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 10, 20, 0.85); backdrop-filter: blur(12px);
+    z-index: 99999; display: flex; align-items: center; justify-content: center;
+}
+.login-popup {
+    background: linear-gradient(145deg, #161622, #0d0d14);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 40px; text-align: center; max-width: 420px; width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 40px rgba(230, 57, 70, 0.1);
+    transform: scale(0.9); animation: popupIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes popupIn { to { transform: scale(1); } }
+.login-popup h2 { font-family: var(--font-display); font-size: 32px; color: #fff; margin-bottom: 12px; }
+.login-popup p { color: #aaa; font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
+.login-popup-actions { display: flex; gap: 12px; justify-content: center; }
+.btn-outline { background: transparent; border: 1px solid var(--red); color: var(--red); }
+.btn-outline:hover { background: rgba(230,57,70,0.1); }
+</style>
+<div class="login-overlay">
+    <div class="login-popup">
+        <div style="font-size: 48px; margin-bottom: 10px;">🍿</div>
+        <h2>Login Required</h2>
+        <p>You need to be logged in to watch movies, rate content, and leave reviews on CineVault.</p>
+        <div class="login-popup-actions">
+            <button class="glow-btn" onclick="window.location.href='login.php'" style="padding:12px 30px; font-size:16px;">Log In</button>
+            <button class="glow-btn btn-outline" onclick="window.location.href='register.php'" style="padding:12px 30px; font-size:16px; box-shadow: none;">Sign Up</button>
+        </div>
+        <div style="margin-top:24px"><a href="home.php" style="color:#666;font-size:14px;text-decoration:none;transition:0.2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">← Back to Home</a></div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="watch-container">
     <!-- Player -->
     <div class="watch-player-wrapper">
