@@ -541,41 +541,75 @@ async function uploadFile(input, type, targetFieldId, statusId) {
     if (!input.files[0]) return;
     var file   = input.files[0];
     var status = document.getElementById(statusId);
-    var CHUNK  = 2 * 1024 * 1024; // 2 MB per chunk
+    var CHUNK  = 10 * 1024 * 1024; // 10 MB per chunk (5x faster than 2MB)
 
-    // Build a progress bar inside statusId element
-    status.innerHTML = '<div style="background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;height:8px;width:100%;margin-top:4px"><div id="uploadBar_'+statusId+'" style="height:100%;background:var(--red);width:0%;transition:width .2s"></div></div><span id="uploadPct_'+statusId+'" style="font-size:12px;color:#aaa">0%</span>';
+    var formatSize = function(bytes) {
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+    
+    var fileName = file.name;
+    var fileSize = formatSize(file.size);
+
+    // Enhanced UI for Uploads
+    status.innerHTML = 
+        '<div style="font-size:13px;color:#ddd;margin-bottom:8px;word-break:break-all;line-height:1.4">' +
+            '📄 <strong style="color:#fff">' + fileName + '</strong> <span style="color:#aaa">(' + fileSize + ')</span>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden;height:12px;width:100%;box-shadow:inset 0 1px 3px rgba(0,0,0,.5)">' +
+            '<div id="uploadBar_' + statusId + '" style="height:100%;background:linear-gradient(90deg, #ff416c, #ff4b2b);width:0%;transition:width .1s linear;border-radius:8px"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-top:6px">' +
+            '<span id="uploadPct_' + statusId + '" style="font-weight:800;color:#fff;font-size:13px">0%</span>' +
+            '<span id="uploadSpeed_' + statusId + '" style="font-family:monospace">Calculating...</span>' +
+        '</div>';
+
     var bar = document.getElementById('uploadBar_'+statusId);
     var pct = document.getElementById('uploadPct_'+statusId);
+    var spd = document.getElementById('uploadSpeed_'+statusId);
+
+    var startTime = Date.now();
+
+    // Helper for smooth XHR uploads
+    function uploadViaXHR(fd, onProgress) {
+        return new Promise((resolve, reject) => {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'api/upload_media.php?type='+type, true);
+            xhr.upload.onprogress = onProgress;
+            xhr.onload = function() {
+                try { resolve(JSON.parse(xhr.responseText)); } catch(e) { reject('JSON Parse Error'); }
+            };
+            xhr.onerror = function() { reject('Network Error'); };
+            xhr.send(fd);
+        });
+    }
 
     // Simple upload for small files / images
     if (file.size <= 10 * 1024 * 1024 || type !== 'video') {
         var fd = new FormData(); fd.append('file', file);
         try {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', 'api/upload_media.php?type='+type, true);
-            xhr.upload.onprogress = function(e) {
-                if (e.lengthComputable) { var p=Math.round(e.loaded/e.total*100); bar.style.width=p+'%'; pct.textContent=p+'%'; }
-            };
-            xhr.onload = function() {
-                var d = JSON.parse(xhr.responseText);
-                if (d.status === 'success') {
-                    document.getElementById(targetFieldId).value = d.url;
-                    status.innerHTML = '<span style="color:#0c6">\u2705 Uploaded: '+d.filename+'</span>';
-                    if (type==='poster') { document.getElementById('posterPreview').src=d.url; document.getElementById('posterPreviewWrap').style.display=''; }
-                } else { status.innerHTML = '<span style="color:#f55">\u274c '+d.message+'</span>'; }
-            };
-            xhr.onerror = function() { status.innerHTML = '<span style="color:#f55">\u274c Network error</span>'; };
-            xhr.send(fd);
-        } catch(e) { status.innerHTML = '<span style="color:#f55">\u274c Upload failed</span>'; }
+            var d = await uploadViaXHR(fd, function(e) {
+                if (e.lengthComputable) { 
+                    var p = Math.round((e.loaded / e.total) * 100); 
+                    bar.style.width = p + '%'; pct.textContent = p + '%'; 
+                    var elapsed = (Date.now() - startTime) / 1000;
+                    if(elapsed > 0) spd.textContent = formatSize(e.loaded / elapsed) + '/s';
+                }
+            });
+            if (d.status === 'success') {
+                document.getElementById(targetFieldId).value = d.url;
+                status.innerHTML = '<span style="color:#0c6">✅ Uploaded Successfully: ' + d.filename + '</span>';
+                if (type==='poster') { document.getElementById('posterPreview').src=d.url; document.getElementById('posterPreviewWrap').style.display=''; }
+            } else { status.innerHTML = '<span style="color:#f55">❌ ' + d.message + '</span>'; }
+        } catch(e) { status.innerHTML = '<span style="color:#f55">❌ Upload failed ('+e+')</span>'; }
         return;
     }
 
-    // Chunked upload for large videos
+    // Chunked upload for large videos (Smooth progress tracking across chunks)
     var totalChunks = Math.ceil(file.size / CHUNK);
     var uploadId    = Date.now().toString(36) + Math.random().toString(36).slice(2);
     var origName    = file.name.replace(/[^a-zA-Z0-9_.-]/g,'_');
-    pct.textContent = '0% ('+totalChunks+' chunks)';
+    var baseLoaded  = 0;
 
     for (var i = 0; i < totalChunks; i++) {
         var start  = i * CHUNK;
@@ -589,22 +623,33 @@ async function uploadFile(input, type, targetFieldId, statusId) {
         fd.append('original_name', origName);
 
         try {
-            var r = await fetch('api/upload_media.php?type='+type, {method:'POST',body:fd});
-            var d = await r.json();
-            var progress = Math.round(((i+1)/totalChunks)*100);
-            bar.style.width = progress + '%';
-            pct.textContent = progress + '% (' + (i+1) + '/' + totalChunks + ' chunks)';
+            var d = await uploadViaXHR(fd, function(e) {
+                if (e.lengthComputable) {
+                    var currentTotalLoaded = baseLoaded + e.loaded;
+                    var p = Math.round((currentTotalLoaded / file.size) * 100);
+                    bar.style.width = p + '%';
+                    pct.textContent = p + '%';
+                    
+                    var elapsed = (Date.now() - startTime) / 1000;
+                    if(elapsed > 0) {
+                        spd.textContent = formatSize(currentTotalLoaded / elapsed) + '/s';
+                    }
+                }
+            });
+            
+            baseLoaded += slice.size;
+
             if (d.status === 'success') {
                 // Final chunk assembled
                 document.getElementById(targetFieldId).value = d.url;
-                status.innerHTML = '<span style="color:#0c6">\u2705 Uploaded: '+d.filename+' ('+Math.round(file.size/1048576)+' MB)</span>';
+                status.innerHTML = '<span style="color:#0c6">✅ Upload Complete: ' + d.filename + '</span>';
                 return;
             } else if (d.status !== 'chunk_ok') {
-                status.innerHTML = '<span style="color:#f55">\u274c '+d.message+'</span>';
+                status.innerHTML = '<span style="color:#f55">❌ ' + d.message + '</span>';
                 return;
             }
         } catch(e) {
-            status.innerHTML = '<span style="color:#f55">\u274c Chunk '+(i+1)+' failed. Retry or use a smaller file.</span>';
+            status.innerHTML = '<span style="color:#f55">❌ Chunk '+(i+1)+' failed. Network error.</span>';
             return;
         }
     }
