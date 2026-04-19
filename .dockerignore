@@ -1,0 +1,6 @@
+.git
+.dockerignore
+Dockerfile
+render.yaml
+node_modules
+Cinevault project.pdf
