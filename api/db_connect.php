@@ -1,10 +1,10 @@
 <?php
 // api/db_connect.php — Database connection for CineVault
-$host     = getenv('DB_HOST') ?: 'localhost';
-$db_name  = getenv('DB_NAME') ?: 'cinevault_db';
-$username = getenv('DB_USER') ?: 'root';
-$password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Anish566@@';
-$port     = getenv('DB_PORT') ?: '3306';
+$host     = getenv('DB_HOST') ?: ($_SERVER['DB_HOST'] ?? 'localhost');
+$db_name  = getenv('DB_NAME') ?: ($_SERVER['DB_NAME'] ?? 'cinevault_db');
+$username = getenv('DB_USER') ?: ($_SERVER['DB_USER'] ?? 'root');
+$password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : ($_SERVER['DB_PASS'] ?? 'Anish566@@');
+$port     = getenv('DB_PORT') ?: ($_SERVER['DB_PORT'] ?? '3306');
 
 try {
     $dsn = "mysql:host=$host;port=$port;dbname=$db_name;charset=utf8mb4";
@@ -20,6 +20,11 @@ try {
         $options[PDO::MYSQL_ATTR_SSL_CA] = '';
     }
     
+    // Explicit error if running on Render without DB_HOST
+    if ($host === 'localhost' && (getenv('RENDER') || isset($_SERVER['RENDER']))) {
+        die('<h1 style="color:red;text-align:center;padding:50px">Environment Variables Missing! Please add DB_HOST, DB_USER, DB_PASS, DB_PORT, and DB_NAME in your Render Dashboard.</h1>');
+    }
+
     $pdo = new PDO($dsn, $username, $password, $options);
 } catch (PDOException $e) {
     // Return JSON-safe error for API calls, or HTML for page calls
